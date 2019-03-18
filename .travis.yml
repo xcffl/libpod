@@ -1,0 +1,49 @@
+---
+
+sudo: required
+dist: trusty
+
+language: go
+
+before_install:
+  - if [ "${TRAVIS_OS_NAME}" = linux ]; then sudo apt-get -qq update; fi
+  - if [ "${TRAVIS_OS_NAME}" = linux ]; then sudo apt-get -qq install btrfs-tools libdevmapper-dev libgpgme11-dev libapparmor-dev; fi
+  - if [ "${TRAVIS_OS_NAME}" = linux ]; then sudo apt-get -qq install autoconf automake bison e2fslibs-dev libfuse-dev libtool liblzma-dev gettext; fi
+  - if [ "${TRAVIS_OS_NAME}" = linux ]; then sudo apt-get -qq install python3-setuptools python3-dateutil python3-psutil; fi
+  - if [ "${TRAVIS_OS_NAME}" = linux ]; then sudo make install.libseccomp.sudo; fi
+
+services:
+    - docker
+
+branches:
+    only:
+        - bionic
+
+env:
+    global:
+        - TRAVIS_ENV="-e TRAVIS=$TRAVIS
+          -e CI=$CI
+          -e TRAVIS_COMMIT=$TRAVIS_COMMIT
+          -e TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
+          -e TRAVIS_REPO_SLUG=$TRAVIS_REPO_SLUG -e TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
+          -e TRAVIS_PULL_REQUEST_SHA=$TRAVIS_PULL_REQUEST_SHA -e TRAVIS_PULL_REQUEST_SLUG=$TRAVIS_PULL_REQUEST_SLUG
+          -e TRAVIS_BRANCH=$TRAVIS_BRANCH -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BUILD_DIR=$TRAVIS_BUILD_DIR"
+        - DISTRO="ubuntu"
+
+before_install:
+    - sudo apt-get -qq update
+    - sudo apt-get -qq install realpath
+
+script:
+    - echo "Travis/host environment:"
+    - env
+    - echo
+    - echo "Running tests in SPC using ./hack/run_build.sh"
+    - "./hack/run_build.sh"
+
+notifications:
+  irc:
+      channels:
+          "chat.freenode.net#podman"
+      on_success: never
+      on_failure: always

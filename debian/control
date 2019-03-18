@@ -1,0 +1,33 @@
+Source: podman
+Section: devel
+Priority: optional
+Maintainer: Lokesh Mandvekar <lsm5@fedoraproject.org>
+Build-Depends: debhelper (>=9),
+    libassuan-dev,
+    libdevmapper-dev,
+    libgpgme11-dev,
+    libseccomp-dev,
+    libsystemd-dev,
+    dh-golang,
+    golang,
+    libglib2.0-dev,
+    btrfs-tools,
+    go-md2man,
+    python3-setuptools
+Standards-Version: 3.9.6
+Homepage: https://github.com/containers/libpod.git
+Vcs-Git: git://github.com/lsm5/libpod.git
+
+Package: podman
+Architecture: any
+Depends: ${misc:Depends},
+    libseccomp2,
+    libdevmapper1.02.1,
+    libgpgme11,
+    containernetworking-plugins (>=0.7.3),
+    conmon (>=0-1~dev~ubuntu18.04~ppa2),
+    containers-common (>=0.1.36-1~dev~ubuntu18.04~ppa9),
+    cri-o-runc
+Recommends: slirp4netns,
+   uidmap
+Description: Manage pods, containers and container images.
