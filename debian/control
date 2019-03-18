@@ -24,10 +24,10 @@ Depends: ${misc:Depends},
     libseccomp2,
     libdevmapper1.02.1,
     libgpgme11,
-    containernetworking-plugins (>=0.7.3),
     conmon (>=0-1~dev~ubuntu18.04~ppa2),
     containers-common (>=0.1.36-1~dev~ubuntu18.04~ppa9),
     cri-o-runc
 Recommends: slirp4netns,
+   containernetworking-plugins (>=0.8.1),
    uidmap
 Description: Manage pods, containers and container images.
