@@ -43,8 +43,10 @@ override_dh_auto_configure:
 	mkdir -p $(BUILDDIR)/src/github.com/containers
 	ln -s $(BUILDDIR) $(BUILDDIR)/src/$(DH_GOPKG)
 	sed -i '/seccomp.json/d' Makefile
+	sed -i '/bin\/podman-remote/d' Makefile
 
 override_dh_auto_build:
+	GOPATH=$(BUILDDIR) $(GO) generate ./cmd/podman/varlink/...
 	GOPATH=$(BUILDDIR) make GO=$(GO) BUILDTAGS=$(BUILDTAGS) LDFLAGS_PODMAN=$(LDFLAGS_PODMAN) podman docs docker-docs
 	rm -rf $(BUILDDIR)/obj-*-linux-gnu
 
