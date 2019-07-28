@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Lokesh Mandvekar <lsm5@fedoraproject.org>
 Build-Depends: debhelper (>=9),
     libassuan-dev,
+    libbtrfs-dev,
     libdevmapper-dev,
     libgpgme11-dev,
     libseccomp-dev,
