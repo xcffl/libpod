@@ -1,3 +1,9 @@
+podman (1.4.4-2~ubuntu19.04~ppa4) disco; urgency=medium
+
+  * correct install-time deps 
+
+ -- Lokesh Mandvekar <lsm5@fedoraproject.org>  Sun, 28 Jul 2019 20:56:37 +0000
+
 podman (1.4.4-2~ubuntu19.04~ppa3) disco; urgency=medium
 
   * build dep on libbtrfs-dev
