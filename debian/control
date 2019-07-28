@@ -14,7 +14,7 @@ Build-Depends: debhelper (>=9),
     libglib2.0-dev,
     btrfs-tools,
     go-md2man
-Standards-Version: 3.9.6
+Standards-Version: 4.3.0
 Homepage: https://github.com/containers/libpod.git
 Vcs-Git: git://github.com/lsm5/libpod.git
 
