@@ -1,3 +1,9 @@
+podman (1.4.4-2~ubuntu19.04~ppa2) disco; urgency=medium
+
+  * build correctly for disco
+
+ -- Lokesh Mandvekar <lsm5@fedoraproject.org>  Sun, 28 Jul 2019 14:31:59 +0000
+
 podman (1.4.4-1~git591ed25~ubuntu18.04~ppa1) bionic; urgency=medium
 
   * bump to 1.4.4
