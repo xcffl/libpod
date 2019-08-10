@@ -1,3 +1,9 @@
+podman (1.5.0-1~ubuntu19.04~ppa1) disco; urgency=medium
+
+  * bump to v1.5.0
+
+ -- Lokesh Mandvekar (Bot) <lsm5+bot@fedoraproject.org>  Sat, 10 Aug 2019 20:47:12 +0000
+
 podman (1.4.4-2~ubuntu19.04~ppa4) disco; urgency=medium
 
   * correct install-time deps 
