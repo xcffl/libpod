@@ -1,3 +1,9 @@
+podman (1.5.0-2~ubuntu19.04~ppa3) disco; urgency=medium
+
+  * rebuild
+
+ -- Lokesh Mandvekar <lsm5-bot@7487a80043b9>  Sun, 11 Aug 2019 19:44:51 +0000
+
 podman (1.5.0-1~ubuntu19.04~ppa2) disco; urgency=medium
 
   * rebuild 
