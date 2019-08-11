@@ -13,7 +13,7 @@ BUILDTAGS := "seccomp systemd containers_image_ostree_stub"
 BUILD_INFO=$(shell date +%s)
 LDFLAGS="-X main.gitCommit=$(GIT_COMMIT) -X main.buildInfo=$(BUILD_INFO)"
 GO := /usr/bin/go
-UPSTREAM_TAG=v1.4.3
+UPSTREAM_TAG=v1.5.0
 
 %:
 	dh_clean
