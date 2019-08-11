@@ -1,3 +1,9 @@
+podman (1.5.0-1~ubuntu19.04~ppa2) disco; urgency=medium
+
+  * rebuild 
+
+ -- Lokesh Mandvekar <lsm5@fedoraproject.org>  Sun, 11 Aug 2019 18:39:45 +0000
+
 podman (1.5.0-1~ubuntu19.04~ppa1) disco; urgency=medium
 
   * bump to v1.5.0
