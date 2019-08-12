@@ -1,3 +1,9 @@
+podman (1.5.0-2~ubuntu19.04~ppa5) disco; urgency=medium
+
+  * rebuild
+
+ -- Lokesh Mandvekar <lsm5-bot@7487a80043b9>  Mon, 12 Aug 2019 18:33:07 +0000
+
 podman (1.5.0-2~ubuntu19.04~ppa4) disco; urgency=medium
 
   * don't install seccomp.json 
