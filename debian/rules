@@ -27,6 +27,7 @@ override_dh_auto_configure:
 	cp -rp $(BUILDDIR)/vendor $(BUILDDIR)/src
 	mkdir -p $(BUILDDIR)/src/github.com/containers
 	ln -s $(BUILDDIR) $(BUILDDIR)/src/$(DH_GOPKG)
+	sed -i '/seccomp.json/d' Makefile
 	sed -i '/bin\/podman-remote/d' Makefile
 	sed -i 's/\.gopathok//g' Makefile
 
