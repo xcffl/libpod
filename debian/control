@@ -25,6 +25,7 @@ Depends: ${misc:Depends},
     libseccomp2,
     libdevmapper1.02.1,
     libgpgme11,
+    libvarlink,
     conmon (>=1.0.0),
     containers-common (>=0.1.37),
     cri-o-runc
