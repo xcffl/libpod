@@ -9,7 +9,6 @@ ETCDIR := $(DESTDIR)/etc
 BINDIR := $(PREFIX)/bin
 MANDIR := $(PREFIX)/share/man
 SYSTEMDDIR := $(PREFIX)/lib/systemd/system
-BUILDTAGS := "seccomp systemd containers_image_ostree_stub"
 BUILD_INFO=$(shell date +%s)
 LDFLAGS="-X main.gitCommit=$(GIT_COMMIT) -X main.buildInfo=$(BUILD_INFO)"
 GO := /usr/bin/go
@@ -28,7 +27,6 @@ override_dh_auto_configure:
 	mkdir -p $(BUILDDIR)/src/github.com/containers
 	ln -s $(BUILDDIR) $(BUILDDIR)/src/$(DH_GOPKG)
 	sed -i '/seccomp.json/d' Makefile
-	sed -i '/bin\/podman-remote/d' Makefile
 	sed -i 's/\.gopathok//g' Makefile
 
 override_dh_auto_build:
@@ -40,7 +38,7 @@ override_dh_auto_test:
 
 override_dh_auto_install:
 	install PREFIX=$(PREFIX) -dp $(SYSTEMDDIR)
-	GOPATH=$(BUILDDIR) make GO=$(GO) BUILDTAGS=$(BUILDTAGS) PREFIX=$(PREFIX) ETCDIR=$(ETCDIR) BINDIR=$(BINDIR) MANDIR=$(MANDIR) \
+	GOPATH=$(BUILDDIR) make GO=$(GO) PREFIX=$(PREFIX) ETCDIR=$(ETCDIR) BINDIR=$(BINDIR) MANDIR=$(MANDIR) \
 	   install.bin \
 	   install.cni \
 	   install.completions \

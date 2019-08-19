@@ -1,3 +1,9 @@
+podman (1.5.0-2~ubuntu19.04~ppa7) disco; urgency=medium
+
+  * install podman-remote, enable varlink 
+
+ -- Lokesh Mandvekar <lsm5@fedoraproject.org>  Mon, 19 Aug 2019 14:32:42 +0000
+
 podman (1.5.0-2~ubuntu19.04~ppa6) disco; urgency=medium
 
   * rebuild
