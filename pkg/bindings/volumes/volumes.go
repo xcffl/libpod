@@ -7,16 +7,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/containers/libpod/libpod"
-	"github.com/containers/libpod/pkg/api/handlers"
 	"github.com/containers/libpod/pkg/bindings"
+	"github.com/containers/libpod/pkg/domain/entities"
 	jsoniter "github.com/json-iterator/go"
 )
 
 // Create creates a volume given its configuration.
-func Create(ctx context.Context, config handlers.VolumeCreateConfig) (*libpod.VolumeConfig, error) {
+func Create(ctx context.Context, config entities.VolumeCreateOptions) (*entities.VolumeConfigResponse, error) {
 	var (
-		v libpod.VolumeConfig
+		v entities.VolumeConfigResponse
 	)
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
@@ -35,9 +34,9 @@ func Create(ctx context.Context, config handlers.VolumeCreateConfig) (*libpod.Vo
 }
 
 // Inspect returns low-level information about a volume.
-func Inspect(ctx context.Context, nameOrID string) (*libpod.InspectVolumeData, error) {
+func Inspect(ctx context.Context, nameOrID string) (*entities.VolumeConfigResponse, error) {
 	var (
-		inspect libpod.InspectVolumeData
+		inspect entities.VolumeConfigResponse
 	)
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
@@ -52,9 +51,9 @@ func Inspect(ctx context.Context, nameOrID string) (*libpod.InspectVolumeData, e
 
 // List returns the configurations for existing volumes in the form of a slice.  Optionally, filters
 // can be used to refine the list of volumes.
-func List(ctx context.Context, filters map[string][]string) ([]*libpod.VolumeConfig, error) {
+func List(ctx context.Context, filters map[string][]string) ([]*entities.VolumeListReport, error) {
 	var (
-		vols []*libpod.VolumeConfig
+		vols []*entities.VolumeListReport
 	)
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
@@ -76,9 +75,9 @@ func List(ctx context.Context, filters map[string][]string) ([]*libpod.VolumeCon
 }
 
 // Prune removes unused volumes from the local filesystem.
-func Prune(ctx context.Context) ([]string, error) {
+func Prune(ctx context.Context) ([]*entities.VolumePruneReport, error) {
 	var (
-		pruned []string
+		pruned []*entities.VolumePruneReport
 	)
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
@@ -86,7 +85,7 @@ func Prune(ctx context.Context) ([]string, error) {
 	}
 	response, err := conn.DoRequest(nil, http.MethodPost, "/volumes/prune", nil)
 	if err != nil {
-		return pruned, err
+		return nil, err
 	}
 	return pruned, response.Process(&pruned)
 }

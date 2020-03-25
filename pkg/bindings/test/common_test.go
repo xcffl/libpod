@@ -3,6 +3,7 @@ package test_bindings
 import (
 	"context"
 	"fmt"
+	"github.com/containers/libpod/libpod/define"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -152,7 +153,7 @@ func (b *bindingTest) startAPIService() *gexec.Session {
 	var (
 		cmd []string
 	)
-	cmd = append(cmd, "--log-level=debug", "system", "service", "--timeout=999999", b.sock)
+	cmd = append(cmd, "--log-level=debug", "--events-backend=file", "system", "service", "--timeout=0", b.sock)
 	return b.runPodman(cmd)
 }
 
@@ -205,8 +206,8 @@ func (b *bindingTest) RunTopContainer(containerName *string, insidePod *bool, po
 	if err != nil {
 		return "", err
 	}
-	waiting := "running"
-	_, err = containers.Wait(b.conn, ctr.ID, &waiting)
+	wait := define.ContainerStateRunning
+	_, err = containers.Wait(b.conn, ctr.ID, &wait)
 	return ctr.ID, err
 }
 

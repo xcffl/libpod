@@ -14,11 +14,10 @@ import (
 
 var _ = Describe("Podman pods", func() {
 	var (
-		bt       *bindingTest
-		s        *gexec.Session
-		newpod   string
-		err      error
-		trueFlag bool = true
+		bt     *bindingTest
+		s      *gexec.Session
+		newpod string
+		err    error
 	)
 
 	BeforeEach(func() {
@@ -57,7 +56,7 @@ var _ = Describe("Podman pods", func() {
 		Expect(err).To(BeNil())
 		Expect(len(podSummary)).To(Equal(1))
 		// Adding an alpine container to the existing pod
-		_, err = bt.RunTopContainer(nil, &trueFlag, &newpod)
+		_, err = bt.RunTopContainer(nil, &bindings.PTrue, &newpod)
 		Expect(err).To(BeNil())
 		podSummary, err = pods.List(bt.conn, nil)
 		// Verify no errors.
@@ -76,15 +75,68 @@ var _ = Describe("Podman pods", func() {
 		}
 		Expect(StringInSlice(newpod, names)).To(BeTrue())
 		Expect(StringInSlice("newpod2", names)).To(BeTrue())
+	})
 
-		// TODO not working  Because: code to list based on filter
-		// "not yet implemented",
-		// Validate list pod with filters
-		//filters := make(map[string][]string)
-		//filters["name"] = []string{newpod}
-		//filteredPods, err := pods.List(bt.conn, filters)
-		//Expect(err).To(BeNil())
-		//Expect(len(filteredPods)).To(BeNumerically("==", 1))
+	// The test validates the list pod endpoint with passing filters as the params.
+	It("List pods with filters", func() {
+		var (
+			newpod2 string = "newpod2"
+		)
+		bt.Podcreate(&newpod2)
+		_, err = bt.RunTopContainer(nil, &bindings.PTrue, &newpod)
+		Expect(err).To(BeNil())
+
+		// Expected err with invalid filter params
+		filters := make(map[string][]string)
+		filters["dummy"] = []string{"dummy"}
+		filteredPods, err := pods.List(bt.conn, filters)
+		Expect(err).ToNot(BeNil())
+		code, _ := bindings.CheckResponseCode(err)
+		Expect(code).To(BeNumerically("==", http.StatusInternalServerError))
+
+		// Expected empty response with invalid filters
+		filters = make(map[string][]string)
+		filters["name"] = []string{"dummy"}
+		filteredPods, err = pods.List(bt.conn, filters)
+		Expect(err).To(BeNil())
+		Expect(len(filteredPods)).To(BeNumerically("==", 0))
+
+		// Validate list pod with name filter
+		filters = make(map[string][]string)
+		filters["name"] = []string{newpod2}
+		filteredPods, err = pods.List(bt.conn, filters)
+		Expect(err).To(BeNil())
+		Expect(len(filteredPods)).To(BeNumerically("==", 1))
+		var names []string
+		for _, i := range filteredPods {
+			names = append(names, i.Config.Name)
+		}
+		Expect(StringInSlice("newpod2", names)).To(BeTrue())
+
+		// Validate list pod with id filter
+		filters = make(map[string][]string)
+		response, err := pods.Inspect(bt.conn, newpod)
+		id := response.Config.ID
+		filters["id"] = []string{id}
+		filteredPods, err = pods.List(bt.conn, filters)
+		Expect(err).To(BeNil())
+		Expect(len(filteredPods)).To(BeNumerically("==", 1))
+		names = names[:0]
+		for _, i := range filteredPods {
+			names = append(names, i.Config.Name)
+		}
+		Expect(StringInSlice("newpod", names)).To(BeTrue())
+
+		// Using multiple filters
+		filters["name"] = []string{newpod}
+		filteredPods, err = pods.List(bt.conn, filters)
+		Expect(err).To(BeNil())
+		Expect(len(filteredPods)).To(BeNumerically("==", 1))
+		names = names[:0]
+		for _, i := range filteredPods {
+			names = append(names, i.Config.Name)
+		}
+		Expect(StringInSlice("newpod", names)).To(BeTrue())
 	})
 
 	// The test validates if the exists responds
@@ -111,7 +163,7 @@ var _ = Describe("Podman pods", func() {
 		Expect(code).To(BeNumerically("==", http.StatusNotFound))
 
 		// Adding an alpine container to the existing pod
-		_, err = bt.RunTopContainer(nil, &trueFlag, &newpod)
+		_, err = bt.RunTopContainer(nil, &bindings.PTrue, &newpod)
 		Expect(err).To(BeNil())
 
 		// Binding needs to be modified to inspect the pod state.

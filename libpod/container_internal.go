@@ -142,92 +142,6 @@ func (c *Container) exitFilePath() (string, error) {
 	return c.ociRuntime.ExitFilePath(c)
 }
 
-// create a bundle path and associated files for an exec session
-func (c *Container) createExecBundle(sessionID string) (err error) {
-	bundlePath := c.execBundlePath(sessionID)
-	if createErr := os.MkdirAll(bundlePath, execDirPermission); createErr != nil {
-		return createErr
-	}
-	defer func() {
-		if err != nil {
-			if err2 := os.RemoveAll(bundlePath); err != nil {
-				logrus.Warnf("error removing exec bundle after creation caused another error: %v", err2)
-			}
-		}
-	}()
-	if err2 := os.MkdirAll(c.execExitFileDir(sessionID), execDirPermission); err2 != nil {
-		// The directory is allowed to exist
-		if !os.IsExist(err2) {
-			err = errors.Wrapf(err2, "error creating OCI runtime exit file path %s", c.execExitFileDir(sessionID))
-		}
-	}
-	return
-}
-
-// cleanup an exec session after its done
-func (c *Container) cleanupExecBundle(sessionID string) error {
-	if err := os.RemoveAll(c.execBundlePath(sessionID)); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	return c.ociRuntime.ExecContainerCleanup(c, sessionID)
-}
-
-// the path to a containers exec session bundle
-func (c *Container) execBundlePath(sessionID string) string {
-	return filepath.Join(c.bundlePath(), sessionID)
-}
-
-// Get PID file path for a container's exec session
-func (c *Container) execPidPath(sessionID string) string {
-	return filepath.Join(c.execBundlePath(sessionID), "exec_pid")
-}
-
-// the log path for an exec session
-func (c *Container) execLogPath(sessionID string) string {
-	return filepath.Join(c.execBundlePath(sessionID), "exec_log")
-}
-
-// the socket conmon creates for an exec session
-func (c *Container) execAttachSocketPath(sessionID string) (string, error) {
-	return c.ociRuntime.ExecAttachSocketPath(c, sessionID)
-}
-
-// execExitFileDir gets the path to the container's exit file
-func (c *Container) execExitFileDir(sessionID string) string {
-	return filepath.Join(c.execBundlePath(sessionID), "exit")
-}
-
-// execOCILog returns the file path for the exec sessions oci log
-func (c *Container) execOCILog(sessionID string) string {
-	if !c.ociRuntime.SupportsJSONErrors() {
-		return ""
-	}
-	return filepath.Join(c.execBundlePath(sessionID), "oci-log")
-}
-
-// readExecExitCode reads the exit file for an exec session and returns
-// the exit code
-func (c *Container) readExecExitCode(sessionID string) (int, error) {
-	exitFile := filepath.Join(c.execExitFileDir(sessionID), c.ID())
-	chWait := make(chan error)
-	defer close(chWait)
-
-	_, err := WaitForFile(exitFile, chWait, time.Second*5)
-	if err != nil {
-		return -1, err
-	}
-	ec, err := ioutil.ReadFile(exitFile)
-	if err != nil {
-		return -1, err
-	}
-	ecInt, err := strconv.Atoi(string(ec))
-	if err != nil {
-		return -1, err
-	}
-	return ecInt, nil
-}
-
 // Wait for the container's exit file to appear.
 // When it does, update our state based on it.
 func (c *Container) waitForExitFileAndSync() error {
@@ -556,9 +470,9 @@ func (c *Container) teardownStorage() error {
 	return nil
 }
 
-// Reset resets state fields to default values
-// It is performed before a refresh and clears the state after a reboot
-// It does not save the results - assumes the database will do that for us
+// Reset resets state fields to default values.
+// It is performed before a refresh and clears the state after a reboot.
+// It does not save the results - assumes the database will do that for us.
 func resetState(state *ContainerState) error {
 	state.PID = 0
 	state.ConmonPID = 0
@@ -568,7 +482,7 @@ func resetState(state *ContainerState) error {
 		state.State = define.ContainerStateConfigured
 	}
 	state.ExecSessions = make(map[string]*ExecSession)
-	state.NetworkStatus = nil
+	state.LegacyExecSessions = nil
 	state.BindMounts = make(map[string]string)
 	state.StoppedByUser = false
 	state.RestartPolicyMatch = false
@@ -624,6 +538,18 @@ func (c *Container) refresh() error {
 	}
 	c.lock = lock
 
+	// Try to delete any lingering IP allocations.
+	// If this fails, just log and ignore.
+	// I'm a little concerned that this is so far down in refresh() and we
+	// could fail before getting to it - but the worst that would happen is
+	// that Inspect() would return info on IPs we no longer own.
+	if len(c.state.NetworkStatus) > 0 {
+		if err := c.removeIPv4Allocations(); err != nil {
+			logrus.Errorf("Error removing IP allocations for container %s: %v", c.ID(), err)
+		}
+	}
+	c.state.NetworkStatus = nil
+
 	if err := c.save(); err != nil {
 		return errors.Wrapf(err, "error refreshing state for container %s", c.ID())
 	}
@@ -633,11 +559,58 @@ func (c *Container) refresh() error {
 		return err
 	}
 
-	if rootless.IsRootless() {
+	return nil
+}
+
+// Try and remove IP address allocations. Presently IPv4 only.
+// Should be safe as rootless because NetworkStatus should only be populated if
+// CNI is running.
+func (c *Container) removeIPv4Allocations() error {
+	cniNetworksDir, err := getCNINetworksDir()
+	if err != nil {
+		return err
+	}
+
+	if len(c.state.NetworkStatus) == 0 {
 		return nil
 	}
 
-	return c.refreshCNI()
+	cniDefaultNetwork := ""
+	if c.runtime.netPlugin != nil {
+		cniDefaultNetwork = c.runtime.netPlugin.GetDefaultNetworkName()
+	}
+
+	switch {
+	case len(c.config.Networks) > 0 && len(c.config.Networks) != len(c.state.NetworkStatus):
+		return errors.Wrapf(define.ErrInternal, "network mismatch: asked to join %d CNI networks but got %d CNI results", len(c.config.Networks), len(c.state.NetworkStatus))
+	case len(c.config.Networks) == 0 && len(c.state.NetworkStatus) != 1:
+		return errors.Wrapf(define.ErrInternal, "network mismatch: did not specify CNI networks but joined more than one (%d)", len(c.state.NetworkStatus))
+	case len(c.config.Networks) == 0 && cniDefaultNetwork == "":
+		return errors.Wrapf(define.ErrInternal, "could not retrieve name of CNI default network")
+	}
+
+	for index, result := range c.state.NetworkStatus {
+		for _, ctrIP := range result.IPs {
+			if ctrIP.Version != "4" {
+				continue
+			}
+			candidate := ""
+			if len(c.config.Networks) > 0 {
+				// CNI returns networks in order we passed them.
+				// So our index into results should be our index
+				// into networks.
+				candidate = filepath.Join(cniNetworksDir, c.config.Networks[index], ctrIP.Address.IP.String())
+			} else {
+				candidate = filepath.Join(cniNetworksDir, cniDefaultNetwork, ctrIP.Address.IP.String())
+			}
+			logrus.Debugf("Going to try removing IP address reservation file %q for container %s", candidate, c.ID())
+			if err := os.Remove(candidate); err != nil && !os.IsNotExist(err) {
+				return errors.Wrapf(err, "error removing CNI IP reservation file %q for container %s", candidate, c.ID())
+			}
+		}
+	}
+
+	return nil
 }
 
 // Remove conmon attach socket and terminal resize FIFO
@@ -1814,12 +1787,12 @@ func (c *Container) checkReadyForRemoval() error {
 		return errors.Wrapf(define.ErrCtrStateInvalid, "cannot remove container %s as it is %s - running or paused containers cannot be removed without force", c.ID(), c.state.State.String())
 	}
 
-	// Reap exec sessions
-	if err := c.reapExecSessions(); err != nil {
+	// Check exec sessions
+	sessions, err := c.getActiveExecSessions()
+	if err != nil {
 		return err
 	}
-
-	if len(c.state.ExecSessions) != 0 {
+	if len(sessions) != 0 {
 		return errors.Wrapf(define.ErrCtrStateInvalid, "cannot remove container %s as it has active exec sessions", c.ID())
 	}
 
@@ -1924,41 +1897,6 @@ func (c *Container) checkExitFile() error {
 
 	// Read the exit file to get our stopped time and exit code.
 	return c.handleExitFile(exitFile, info)
-}
-
-// Reap dead exec sessions
-func (c *Container) reapExecSessions() error {
-	// Instead of saving once per iteration, use a defer to do it once at
-	// the end.
-	var lastErr error
-	needSave := false
-	for id := range c.state.ExecSessions {
-		alive, err := c.ociRuntime.ExecUpdateStatus(c, id)
-		if err != nil {
-			if lastErr != nil {
-				logrus.Errorf("Error reaping exec sessions for container %s: %v", c.ID(), lastErr)
-			}
-			lastErr = err
-			continue
-		}
-		if !alive {
-			// Clean up lingering files and remove the exec session
-			if err := c.ociRuntime.ExecContainerCleanup(c, id); err != nil {
-				return errors.Wrapf(err, "error cleaning up container %s exec session %s files", c.ID(), id)
-			}
-			delete(c.state.ExecSessions, id)
-			needSave = true
-		}
-	}
-	if needSave {
-		if err := c.save(); err != nil {
-			if lastErr != nil {
-				logrus.Errorf("Error reaping exec sessions for container %s: %v", c.ID(), lastErr)
-			}
-			lastErr = err
-		}
-	}
-	return lastErr
 }
 
 func (c *Container) hasNamespace(namespace spec.LinuxNamespaceType) bool {

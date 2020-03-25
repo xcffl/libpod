@@ -2,8 +2,8 @@ package server
 
 import (
 	"github.com/containers/libpod/libpod"
-	"github.com/containers/libpod/pkg/api/handlers"
 	"github.com/containers/libpod/pkg/api/handlers/utils"
+	"github.com/containers/libpod/pkg/domain/entities"
 )
 
 // No such image
@@ -127,7 +127,7 @@ type swagPodAlreadyStopped struct {
 // swagger:response DockerImageSummary
 type swagImageSummary struct {
 	// in:body
-	Body []handlers.ImageSummary
+	Body []entities.ImageSummary
 }
 
 // List Containers
@@ -150,12 +150,19 @@ type ok struct {
 	}
 }
 
+// Volume prune response
+// swagger:response VolumePruneResponse
+type swagVolumePruneResponse struct {
+	// in:body
+	Body []entities.VolumePruneReport
+}
+
 // Volume create response
 // swagger:response VolumeCreateResponse
 type swagVolumeCreateResponse struct {
 	// in:body
 	Body struct {
-		libpod.VolumeConfig
+		entities.VolumeConfigResponse
 	}
 }
 

@@ -383,6 +383,10 @@ docdir:
 .PHONY: docs
 docs: .install.md2man docdir $(MANPAGES) ## Generate documentation
 
+.PHONE: xref_helpmsgs_manpages
+xref_helpmsgs_manpages:
+	./hack/xref-helpmsgs-manpages
+
 install-podman-remote-%-docs: podman-remote docs $(MANPAGES)
 	rm -rf docs/build/remote
 	mkdir -p docs/build/remote
@@ -430,7 +434,7 @@ podman-remote-release-%.zip:
 	cp release.txt "$(TMPDIR)/"
 	cp ./bin/podman-remote-$*$(BINSFX) "$(TMPDIR)/$(SUBDIR)/podman$(BINSFX)"
 	cp -r ./docs/build/remote/$* "$(TMPDIR)/$(SUBDIR)/docs/"
-	cd "$(TMPDIR)" && \
+	cd "$(TMPDIR)/$(SUBDIR)" && \
 		zip --recurse-paths "$(CURDIR)/$@" "./release.txt" "./"
 	-rm -rf "$(TMPDIR)"
 
@@ -523,6 +527,11 @@ install.systemd:
 	# For user units the default.target that's the default is fine.
 	sed -e 's,^WantedBy=.*,WantedBy=default.target,' < contrib/varlink/io.podman.service > ${DESTDIR}${USERSYSTEMDDIR}/io.podman.service
 	install ${SELINUXOPT} -m 644 contrib/varlink/podman.conf ${DESTDIR}${TMPFILESDIR}/podman.conf
+	# Install APIV2 services
+	install ${SELINUXOPT} -m 644 contrib/systemd/user/podman.socket ${DESTDIR}${USERSYSTEMDDIR}/podman.socket
+	install ${SELINUXOPT} -m 644 contrib/systemd/user/podman.service ${DESTDIR}${USERSYSTEMDDIR}/podman.service
+	install ${SELINUXOPT} -m 644 contrib/systemd/system/podman.socket ${DESTDIR}${SYSTEMDDIR}/podman.socket
+	install ${SELINUXOPT} -m 644 contrib/systemd/system/podman.service ${DESTDIR}${SYSTEMDDIR}/podman.service
 
 .PHONY: uninstall
 uninstall:
@@ -541,6 +550,10 @@ uninstall:
 	rm -f ${DESTDIR}${SYSTEMDDIR}/io.podman.socket
 	rm -f ${DESTDIR}${USERSYSTEMDDIR}/io.podman.socket
 	rm -f ${DESTDIR}${SYSTEMDDIR}/io.podman.service
+	rm -f ${DESTDIR}${SYSTEMDDIR}/podman.service
+	rm -f ${DESTDIR}${SYSTEMDDIR}/podman.socket
+	rm -f ${DESTDIR}${USERSYSTEMDDIR}/podman.socket
+	rm -f ${DESTDIR}${USERSYSTEMDDIR}/podman.service
 
 .PHONY: .gitvalidation
 .gitvalidation: .gopathok

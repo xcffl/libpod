@@ -109,7 +109,7 @@ func NewConnection(ctx context.Context, uri string, identity ...string) (context
 		}
 		client, err = tcpClient(_url)
 	default:
-		return nil, errors.Errorf("%s is not a support schema", _url.Scheme)
+		return nil, errors.Errorf("'%s' is not a supported schema", _url.Scheme)
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create %sClient", _url.Scheme)
@@ -165,8 +165,13 @@ func sshClient(_url *url.URL, identity string, secure bool) (*http.Client, error
 		}
 	}
 
+	port := _url.Port()
+	if port == "" {
+		port = "22"
+	}
+
 	bastion, err := ssh.Dial("tcp",
-		net.JoinHostPort(_url.Hostname(), _url.Port()),
+		net.JoinHostPort(_url.Hostname(), port),
 		&ssh.ClientConfig{
 			User:            _url.User.Username(),
 			Auth:            []ssh.AuthMethod{auth},

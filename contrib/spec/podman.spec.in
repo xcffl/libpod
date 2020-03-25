@@ -48,7 +48,7 @@ Epoch: 99
 %else
 Epoch: 0
 %endif
-Version: 1.8.2
+Version: 1.8.3
 Release: #COMMITDATE#.git%{shortcommit0}%{?dist}
 Summary: Manage Pods, Containers and Container Images
 License: ASL 2.0
@@ -524,6 +524,10 @@ export GOPATH=%{buildroot}/%{gopath}:$(pwd)/vendor:%{gopath}
 %{_unitdir}/io.podman.socket
 %{_usr}/lib/systemd/user/io.podman.service
 %{_usr}/lib/systemd/user/io.podman.socket
+%{_unitdir}/podman.service
+%{_unitdir}/podman.socket
+%{_usr}/lib/systemd/user/podman.service
+%{_usr}/lib/systemd/user/podman.socket
 %{_usr}/lib/tmpfiles.d/%{name}.conf
 
 %if 0%{?with_devel}

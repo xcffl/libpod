@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/containers/libpod/libpod"
+	"github.com/containers/libpod/libpod/define"
 	lpapiv2 "github.com/containers/libpod/pkg/api/handlers/libpod"
 	"github.com/containers/libpod/pkg/bindings"
 )
@@ -125,13 +126,13 @@ func Inspect(ctx context.Context, nameOrID string, size *bool) (*libpod.InspectC
 // Kill sends a given signal to a given container.  The signal should be the string
 // representation of a signal like 'SIGKILL'. The nameOrID can be a container name
 // or a partial/full ID
-func Kill(ctx context.Context, nameOrID string, signal string) error {
+func Kill(ctx context.Context, nameOrID string, sig string) error {
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
 		return err
 	}
 	params := url.Values{}
-	params.Set("signal", signal)
+	params.Set("signal", sig)
 	response, err := conn.DoRequest(nil, http.MethodPost, "/containers/%s/kill", params, nameOrID)
 	if err != nil {
 		return err
@@ -139,7 +140,6 @@ func Kill(ctx context.Context, nameOrID string, signal string) error {
 	return response.Process(nil)
 
 }
-func Logs() {}
 
 // Pause pauses a given container.  The nameOrID can be a container name
 // or a partial/full ID.
@@ -213,7 +213,7 @@ func Unpause(ctx context.Context, nameOrID string) error {
 // Wait blocks until the given container reaches a condition. If not provided, the condition will
 // default to stopped.  If the condition is stopped, an exit code for the container will be provided. The
 // nameOrID can be a container name or a partial/full ID.
-func Wait(ctx context.Context, nameOrID string, condition *string) (int32, error) {
+func Wait(ctx context.Context, nameOrID string, condition *define.ContainerStatus) (int32, error) { //nolint
 	var exitCode int32
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
@@ -221,7 +221,7 @@ func Wait(ctx context.Context, nameOrID string, condition *string) (int32, error
 	}
 	params := url.Values{}
 	if condition != nil {
-		params.Set("condition", *condition)
+		params.Set("condition", condition.String())
 	}
 	response, err := conn.DoRequest(nil, http.MethodPost, "/containers/%s/wait", params, nameOrID)
 	if err != nil {
@@ -247,14 +247,14 @@ func Exists(ctx context.Context, nameOrID string) (bool, error) {
 
 // Stop stops a running container.  The timeout is optional. The nameOrID can be a container name
 // or a partial/full ID
-func Stop(ctx context.Context, nameOrID string, timeout *int) error {
+func Stop(ctx context.Context, nameOrID string, timeout *uint) error {
 	params := url.Values{}
 	conn, err := bindings.GetClient(ctx)
 	if err != nil {
 		return err
 	}
 	if timeout != nil {
-		params.Set("t", strconv.Itoa(*timeout))
+		params.Set("t", strconv.Itoa(int(*timeout)))
 	}
 	response, err := conn.DoRequest(nil, http.MethodPost, "/containers/%s/stop", params, nameOrID)
 	if err != nil {
